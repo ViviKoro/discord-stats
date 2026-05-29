@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>enmiruto × vivikoro — Discord Stats</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f11;
+    --bg2: #16181c;
+    --bg3: #1e2026;
+    --bg4: #25272e;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0f0f0;
+    --text2: #9a9da8;
+    --text3: #5c5f6e;
+    --blue: #4f8ef7;
+    --blue-dim: rgba(79,142,247,0.15);
+    --green: #2dd4a0;
+    --green-dim: rgba(45,212,160,0.15);
+    --accent: #7c6af7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 40px 24px 60px;
+  }
+  .page { max-width: 880px; margin: 0 auto; }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 36px;
+    padding-bottom: 24px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .avatar-pair { display: flex; }
+  .avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600; border: 2px solid var(--bg);
+  }
+  .avatar-e { background: var(--blue-dim); color: var(--blue); margin-right: -10px; z-index: 2; }
+  .avatar-v { background: var(--green-dim); color: var(--green); }
+  .title { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .title span { color: var(--text3); font-weight: 300; margin: 0 6px; }
+  .subtitle { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .since-badge {
+    font-size: 11px; color: var(--text3);
+    background: var(--bg3); border: 0.5px solid var(--border);
+    border-radius: 20px; padding: 6px 14px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* SECTION */
+  .section { margin-bottom: 32px; }
+  .section-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--text3);
+    margin-bottom: 12px;
+  }
+
+  /* KPI GRID */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .kpi {
+    background: var(--bg2); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 16px 18px;
+    transition: border-color .2s;
+  }
+  .kpi:hover { border-color: var(--border2); }
+  .kpi-label { font-size: 11px; color: var(--text3); margin-bottom: 8px; letter-spacing: .02em; }
+  .kpi-value { font-size: 24px; font-weight: 600; color: var(--text); line-height: 1; letter-spacing: -0.5px; }
+  .kpi-value.sm { font-size: 17px; }
+  .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+  .kpi-blue .kpi-value { color: var(--blue); }
+  .kpi-green .kpi-value { color: var(--green); }
+
+  /* CARD */
+  .card {
+    background: var(--bg2); border: 0.5px solid var(--border);
+    border-radius: 14px; padding: 20px 22px;
+  }
+  .card-title { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-bottom: 16px; }
+
+  /* TWO COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  /* SPLIT BAR */
+  .split-bar-wrap { margin-bottom: 10px; }
+  .split-bar { height: 8px; border-radius: 4px; overflow: hidden; display: flex; margin: 10px 0 12px; }
+  .legend-row { display: flex; gap: 20px; font-size: 12px; color: var(--text2); flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 7px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+  /* VS BARS */
+  .vs-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .vs-name { font-size: 12px; color: var(--text2); width: 72px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 6px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; }
+  .vs-val { font-size: 12px; font-weight: 500; color: var(--text); width: 48px; text-align: right; flex-shrink: 0; font-family: 'DM Mono', monospace; }
+
+  /* PILLS */
+  .pill-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+  .pill {
+    font-size: 12px; padding: 4px 10px; border-radius: 20px;
+    border: 0.5px solid var(--border); color: var(--text2);
+    background: var(--bg3); transition: border-color .15s;
+  }
+  .pill:hover { border-color: var(--border2); }
+  .pill span { font-weight: 600; margin-left: 5px; font-family: 'DM Mono', monospace; }
+
+  /* RESPONSE TIME */
+  .resp-block { text-align: center; padding: 10px 0; }
+  .resp-time { font-size: 32px; font-weight: 600; letter-spacing: -1px; line-height: 1; margin-bottom: 4px; }
+  .resp-label { font-size: 11px; color: var(--text3); }
+  .resp-divider { height: 0.5px; background: var(--border); margin: 16px 0; }
+
+  /* HEATMAP */
+  .heatmap-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .heatmap-table td { padding: 2px 3px; }
+  .heatmap-cell { width: 22px; height: 22px; border-radius: 4px; margin: auto; }
+
+  /* CHART canvas wrapper */
+  .chart-wrap { position: relative; }
+
+  /* STAT HIGHLIGHT */
+  .highlight-row {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .hl-card {
+    flex: 1; min-width: 160px;
+    background: var(--bg3); border: 0.5px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+  }
+  .hl-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+  .hl-value { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .hl-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+  /* FOOTER */
+  .footer {
+    margin-top: 40px; padding-top: 20px;
+    border-top: 0.5px solid var(--border);
+    font-size: 11px; color: var(--text3); text-align: center;
+  }
+
+  @media (max-width: 600px) {
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    body { padding: 24px 16px 40px; }
+    .title { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="avatar-pair">
+        <div class="avatar avatar-e">EN</div>
+        <div class="avatar avatar-v">VI</div>
+      </div>
+      <div>
+        <div class="title">enmiruto <span>×</span> vivikoro</div>
+        <div class="subtitle">Messages privés Discord</div>
+      </div>
+    </div>
+    <div class="since-badge">depuis le 10 nov. 2021</div>
+  </div>
+
+  <!-- KPI -->
+  <div class="section">
+    <div class="section-label">Vue d'ensemble</div>
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">Total messages</div>
+        <div class="kpi-value">14 184</div>
+        <div class="kpi-sub">sur 54 mois</div>
+      </div>
+      <div class="kpi kpi-blue">
+        <div class="kpi-label">enmiruto</div>
+        <div class="kpi-value">7 675</div>
+        <div class="kpi-sub">54,1 % des messages</div>
+      </div>
+      <div class="kpi kpi-green">
+        <div class="kpi-label">vivikoro</div>
+        <div class="kpi-value">6 509</div>
+        <div class="kpi-sub">45,9 % des messages</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Meilleur mois</div>
+        <div class="kpi-value sm">Août 2024</div>
+        <div class="kpi-sub">1 189 messages</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Meilleur jour</div>
+        <div class="kpi-value sm">5 mars 2022</div>
+        <div class="kpi-sub">236 messages</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Moyenne / mois</div>
+        <div class="kpi-value">263</div>
+        <div class="kpi-sub">messages en moyenne</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Fichiers envoyés</div>
+        <div class="kpi-value">1 291</div>
+        <div class="kpi-sub">enm 737 · vivi 554</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Plus long message</div>
+        <div class="kpi-value">2 283</div>
+        <div class="kpi-sub">car. par enmiruto</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPLIT BAR -->
+  <div class="section">
+    <div class="section-label">Répartition</div>
+    <div class="card split-bar-wrap">
+      <div class="split-bar">
+        <div style="width:54.1%;background:var(--blue)"></div>
+        <div style="width:45.9%;background:var(--green)"></div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>enmiruto — 7 675 messages (54,1 %)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>vivikoro — 6 509 messages (45,9 %)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONTHLY CHART -->
+  <div class="section">
+    <div class="section-label">Évolution mensuelle</div>
+    <div class="card">
+      <div class="card-title">Messages par mois · nov. 2021 → mai 2026</div>
+      <div class="legend-row" style="margin-bottom:14px">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>enmiruto</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>vivikoro</div>
+      </div>
+      <div class="chart-wrap" style="height:230px"><canvas id="cMonth"></canvas></div>
+    </div>
+  </div>
+
+  <!-- HOUR + DOW -->
+  <div class="section">
+    <div class="section-label">Quand vous écrivez</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Par heure de la journée</div>
+        <div class="chart-wrap" style="height:190px"><canvas id="cHour"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Par jour de la semaine</div>
+        <div class="chart-wrap" style="height:190px"><canvas id="cDow"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HABITS -->
+  <div class="section">
+    <div class="section-label">Habitudes d'écriture</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Longueur moyenne des messages</div>
+        <div class="vs-row" style="margin-top:6px">
+          <div class="vs-name">enmiruto</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--blue)"></div></div>
+          <div class="vs-val">32,3 car.</div>
+        </div>
+        <div class="vs-row">
+          <div class="vs-name">vivikoro</div>
+          <div class="bar-track"><div class="bar-fill" style="width:75%;background:var(--green)"></div></div>
+          <div class="vs-val">24,4 car.</div>
+        </div>
+
+        <div style="height:0.5px;background:rgba(255,255,255,.06);margin:16px 0"></div>
+        <div class="card-title" style="margin-bottom:12px">Jours actifs</div>
+        <div class="vs-row">
+          <div class="vs-name">enmiruto</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--blue)"></div></div>
+          <div class="vs-val">781 jours</div>
+        </div>
+        <div class="vs-row">
+          <div class="vs-name">vivikoro</div>
+          <div class="bar-track"><div class="bar-fill" style="width:95.9%;background:var(--green)"></div></div>
+          <div class="vs-val">749 jours</div>
+        </div>
+
+        <div style="height:0.5px;background:rgba(255,255,255,.06);margin:16px 0"></div>
+        <div class="card-title" style="margin-bottom:12px">Streak max (messages consécutifs)</div>
+        <div class="vs-row">
+          <div class="vs-name">enmiruto</div>
+          <div class="bar-track"><div class="bar-fill" style="width:72.7%;background:var(--blue)"></div></div>
+          <div class="vs-val">16</div>
+        </div>
+        <div class="vs-row">
+          <div class="vs-name">vivikoro</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--green)"></div></div>
+          <div class="vs-val">22</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Temps de réponse moyen</div>
+        <div class="resp-block" style="padding-top:16px">
+          <div class="resp-time" style="color:var(--blue)">3 min 16s</div>
+          <div class="resp-label">enmiruto répond en moyenne</div>
+        </div>
+        <div class="resp-divider"></div>
+        <div class="resp-block">
+          <div class="resp-time" style="color:var(--green)">4 min 42s</div>
+          <div class="resp-label">vivikoro répond en moyenne</div>
+        </div>
+        <div style="margin-top:16px;font-size:11px;color:var(--text3);text-align:center">calculé sur les réponses en moins d'1h</div>
+        <div style="height:0.5px;background:rgba(255,255,255,.06);margin:16px 0"></div>
+        <div class="card-title" style="margin-bottom:10px">Fichiers envoyés</div>
+        <div class="vs-row">
+          <div class="vs-name">enmiruto</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--blue)"></div></div>
+          <div class="vs-val">737</div>
+        </div>
+        <div class="vs-row">
+          <div class="vs-name">vivikoro</div>
+          <div class="bar-track"><div class="bar-fill" style="width:75.2%;background:var(--green)"></div></div>
+          <div class="vs-val">554</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORDS -->
+  <div class="section">
+    <div class="section-label">Mots les plus utilisés</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title" style="color:var(--blue)">enmiruto</div>
+        <div class="pill-grid" id="words-enm"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--green)">vivikoro</div>
+        <div class="pill-grid" id="words-viv"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEATMAP -->
+  <div class="section">
+    <div class="section-label">Heatmap d'activité</div>
+    <div class="card">
+      <div class="card-title">Intensité par heure · enmiruto vs vivikoro</div>
+      <div style="overflow-x:auto" id="heatmap"></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    Généré depuis l'export DiscordChatExporter · 14 184 messages · 10 nov. 2021 – mai 2026
+  </div>
+
+</div>
+
+<script>
+const MONTHS=["2021-11","2021-12","2022-01","2022-02","2022-03","2022-04","2022-05","2022-06","2022-07","2022-08","2022-10","2022-11","2022-12","2023-01","2023-02","2023-03","2023-04","2023-05","2023-06","2023-07","2023-08","2023-09","2023-10","2023-11","2023-12","2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03","2026-04","2026-05"];
+const ENM_M=[28,15,222,127,382,82,51,107,53,5,2,5,50,34,62,22,40,155,26,5,0,1,1,3,15,66,19,0,10,313,233,555,608,331,305,182,530,121,110,109,224,293,193,370,152,38,103,54,78,78,115,140,255,597];
+const VIV_M=[27,10,210,104,235,86,62,118,52,3,3,7,56,34,38,15,48,150,16,3,1,1,21,1,18,64,12,4,12,307,212,458,581,295,362,189,489,136,76,72,179,212,157,217,128,37,86,41,57,68,89,109,166,375];
+const FR=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const fmtM=m=>{const[y,mo]=m.split('-');return FR[parseInt(mo)-1]+"'"+y.slice(2)};
+const HOURLY_ENM=[428,257,131,46,6,21,44,35,38,66,76,201,284,340,445,376,569,581,737,572,508,549,766,599];
+const HOURLY_VIV=[385,253,127,60,5,14,13,28,33,59,64,134,224,255,298,342,442,482,617,498,423,480,721,552];
+const DOW_ENM=[898,832,1273,1130,1012,1217,1313];
+const DOW_VIV=[795,729,1042,980,880,1024,1059];
+const DOW_LABELS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+const WORDS_ENM=[['bah',494],['mdr',472],['voc',456],['peux',377],['duc',375],['vrai',335],['suis',306],['vais',299],['juste',273],['sais',266],['tkt',229],['quand',223],['bon',208],['faire',200],['vrm',181]];
+const WORDS_VIV=[['voc',248],['bah',246],['fait',224],['ptn',183],['moi',170],['bien',156],['peux',155],['bon',138],['quand',132],['suis',131],['tkt',123],['vrai',122],['mdr',112],['wsh',110],['viens',105]];
+
+const BLUE='#4f8ef7', GREEN='#2dd4a0', GRID='rgba(255,255,255,0.05)', TICK='#5c5f6e';
+
+const baseOpts=(stacked)=>({
+  responsive:true, maintainAspectRatio:false,
+  animation:{duration:600,easing:'easeOutQuart'},
+  plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2026',borderColor:'rgba(255,255,255,.1)',borderWidth:1,padding:10,titleColor:'#f0f0f0',bodyColor:'#9a9da8',titleFont:{family:'DM Sans',size:12},bodyFont:{family:'DM Sans',size:11},callbacks:stacked?{footer:items=>'Total : '+items.reduce((s,i)=>s+i.parsed.y,0)+' msgs'}:{}}},
+  scales:{
+    x:{stacked:!!stacked,grid:{display:false},border:{display:false},ticks:{color:TICK,font:{family:'DM Sans',size:10},autoSkip:true,maxTicksLimit:14,maxRotation:45}},
+    y:{stacked:!!stacked,beginAtZero:true,grid:{color:GRID},border:{display:false},ticks:{color:TICK,font:{family:'DM Sans',size:10},maxTicksLimit:5}}
+  }
+});
+
+new Chart(document.getElementById('cMonth'),{type:'bar',data:{labels:MONTHS.map(fmtM),datasets:[{label:'enmiruto',data:ENM_M,backgroundColor:BLUE,stack:'s',borderWidth:0,borderRadius:2},{label:'vivikoro',data:VIV_M,backgroundColor:GREEN,stack:'s',borderWidth:0,borderRadius:2}]},options:baseOpts(true)});
+
+new Chart(document.getElementById('cHour'),{type:'bar',data:{labels:Array.from({length:24},(_,i)=>i+'h'),datasets:[{label:'enmiruto',data:HOURLY_ENM,backgroundColor:BLUE,stack:'s',borderWidth:0,borderRadius:2},{label:'vivikoro',data:HOURLY_VIV,backgroundColor:GREEN,stack:'s',borderWidth:0,borderRadius:2}]},options:baseOpts(true)});
+
+new Chart(document.getElementById('cDow'),{type:'bar',data:{labels:DOW_LABELS,datasets:[{label:'enmiruto',data:DOW_ENM,backgroundColor:BLUE,stack:'s',borderWidth:0,borderRadius:2},{label:'vivikoro',data:DOW_VIV,backgroundColor:GREEN,stack:'s',borderWidth:0,borderRadius:2}]},options:baseOpts(true)});
+
+const wEnm=document.getElementById('words-enm');
+const wViv=document.getElementById('words-viv');
+const maxE=WORDS_ENM[0][1],maxV=WORDS_VIV[0][1];
+WORDS_ENM.forEach(([w,c])=>{
+  const p=document.createElement('div');p.className='pill';
+  const a=(0.3+0.7*(c/maxE)).toFixed(2);
+  p.style.borderColor=`rgba(79,142,247,${a})`;
+  p.innerHTML=w+`<span style="color:${BLUE}">${c}</span>`;
+  wEnm.appendChild(p);
+});
+WORDS_VIV.forEach(([w,c])=>{
+  const p=document.createElement('div');p.className='pill';
+  const a=(0.3+0.7*(c/maxV)).toFixed(2);
+  p.style.borderColor=`rgba(45,212,160,${a})`;
+  p.innerHTML=w+`<span style="color:${GREEN}">${c}</span>`;
+  wViv.appendChild(p);
+});
+
+const hm=document.getElementById('heatmap');
+const maxVal=Math.max(...HOURLY_ENM,...HOURLY_VIV);
+let html='<table class="heatmap-table"><tr><td></td>';
+for(let h=0;h<24;h++) html+=`<td style="text-align:center;color:${TICK};padding:2px 4px">${h}</td>`;
+html+='</tr>';
+[['enmiruto',HOURLY_ENM,'79,142,247'],['vivikoro',HOURLY_VIV,'45,212,160']].forEach(([name,data,rgb])=>{
+  const c=name==='enmiruto'?BLUE:GREEN;
+  html+=`<tr><td style="padding:4px 10px 4px 2px;color:#9a9da8;white-space:nowrap;font-weight:500;font-size:12px">${name}</td>`;
+  data.forEach(v=>{
+    const a=(v/maxVal*0.9).toFixed(2);
+    html+=`<td><div class="heatmap-cell" title="${v} msgs" style="background:rgba(${rgb},${a})"></div></td>`;
+  });
+  html+='</tr>';
+});
+html+='</table>';
+hm.innerHTML=html;
+</script>
+</body>
+</html>
